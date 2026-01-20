@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreCompact": [
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File \".claude/hooks/context-memory-prompt.ps1\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
