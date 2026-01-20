@@ -13,6 +13,8 @@ import {
   RefreshCw,
   ExternalLink,
   Video,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -38,7 +40,10 @@ interface ContentItem {
   relevance_score: number | null;
   status: string;
   ai_summary: string | null;
+  key_takeaways: string | null;
   link: string;
+  scraped_at: string;
+  thumbnail: string | null;
 }
 
 interface Script {
@@ -52,12 +57,27 @@ interface Script {
   status: 'draft' | 'approved' | 'recorded' | 'uploaded';
 }
 
+type QuadrantKey = 'BREAKING' | 'STRATEGY' | 'MARKET' | 'CAREER';
+
+const quadrantConfig: Record<QuadrantKey, { icon: typeof Zap; color: string; bgColor: string; label: string; description: string }> = {
+  BREAKING: { icon: Zap, color: 'bg-red-500', bgColor: 'bg-red-500/10', label: 'Breaking News', description: 'Time-sensitive AI announcements' },
+  STRATEGY: { icon: TrendingUp, color: 'bg-blue-500', bgColor: 'bg-blue-500/10', label: 'Strategy', description: 'Practical AI implementation insights' },
+  MARKET: { icon: Briefcase, color: 'bg-green-500', bgColor: 'bg-green-500/10', label: 'Market', description: 'Industry trends and analysis' },
+  CAREER: { icon: FileText, color: 'bg-purple-500', bgColor: 'bg-purple-500/10', label: 'Career', description: 'Professional development in AI' },
+};
+
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
-  const [recentContent, setRecentContent] = useState<ContentItem[]>([]);
+  const [allContent, setAllContent] = useState<ContentItem[]>([]);
   const [recentScripts, setRecentScripts] = useState<Script[]>([]);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState<string | null>(null);
+  const [expandedQuadrants, setExpandedQuadrants] = useState<Record<string, boolean>>({
+    BREAKING: true,
+    STRATEGY: true,
+    MARKET: false,
+    CAREER: false,
+  });
 
   useEffect(() => {
     fetchData();
@@ -68,7 +88,7 @@ export default function Dashboard() {
     try {
       const [statsRes, contentRes, scriptsRes] = await Promise.all([
         fetch('/api/stats'),
-        fetch('/api/content?status=categorized'),
+        fetch('/api/content'),
         fetch('/api/scripts'),
       ]);
 
@@ -77,7 +97,7 @@ export default function Dashboard() {
       const scriptsData = await scriptsRes.json();
 
       if (statsData.success) setStats(statsData.data);
-      if (contentData.success) setRecentContent(contentData.data.slice(0, 10));
+      if (contentData.success) setAllContent(contentData.data);
       if (scriptsData.success) setRecentScripts(scriptsData.data.slice(0, 5));
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -106,12 +126,24 @@ export default function Dashboard() {
     setTriggering(null);
   };
 
-  const quadrantConfig = {
-    BREAKING: { icon: Zap, color: 'bg-red-500', label: 'Breaking' },
-    STRATEGY: { icon: TrendingUp, color: 'bg-blue-500', label: 'Strategy' },
-    MARKET: { icon: Briefcase, color: 'bg-green-500', label: 'Market' },
-    CAREER: { icon: FileText, color: 'bg-purple-500', label: 'Career' },
+  const toggleQuadrant = (quadrant: string) => {
+    setExpandedQuadrants(prev => ({ ...prev, [quadrant]: !prev[quadrant] }));
   };
+
+  // Group content by quadrant
+  const contentByQuadrant = allContent.reduce((acc, item) => {
+    const q = item.quadrant as QuadrantKey;
+    if (q && quadrantConfig[q]) {
+      if (!acc[q]) acc[q] = [];
+      acc[q].push(item);
+    }
+    return acc;
+  }, {} as Record<QuadrantKey, ContentItem[]>);
+
+  // Get latest scraped content (last 10 items by scraped_at)
+  const latestScraped = [...allContent]
+    .sort((a, b) => new Date(b.scraped_at || 0).getTime() - new Date(a.scraped_at || 0).getTime())
+    .slice(0, 10);
 
   if (loading) {
     return (
@@ -145,9 +177,9 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <StatCard
             icon={<Clock className="w-5 h-5" />}
-            label="Pending"
-            value={stats?.pending || 0}
-            color="text-yellow-500"
+            label="Total Content"
+            value={stats?.total || 0}
+            color="text-gray-400"
           />
           <StatCard
             icon={<CheckCircle className="w-5 h-5" />}
@@ -169,33 +201,11 @@ export default function Dashboard() {
           />
           <StatCard
             icon={<Video className="w-5 h-5" />}
-            label="Scripts Generated"
+            label="Scripts"
             value={recentScripts.length}
             color="text-red-500"
             href="/scripts"
           />
-        </div>
-
-        {/* Quadrant Distribution */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {Object.entries(quadrantConfig).map(([key, config]) => {
-            const Icon = config.icon;
-            const count = stats?.byQuadrant[key as keyof typeof stats.byQuadrant] || 0;
-            return (
-              <div
-                key={key}
-                className="bg-gray-900 border border-gray-800 rounded-xl p-4"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className={`${config.color} p-2 rounded-lg`}>
-                    <Icon className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-gray-400 text-sm">{config.label}</span>
-                </div>
-                <p className="text-2xl font-bold">{count}</p>
-              </div>
-            );
-          })}
         </div>
 
         {/* Action Buttons */}
@@ -227,14 +237,85 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Recent Scripts */}
+        {/* Latest Scraped Content */}
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Latest Scraped Content</h2>
+            <span className="text-gray-500 text-sm">{latestScraped.length} items</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {latestScraped.map((item) => (
+              <ContentCard key={item.id} item={item} />
+            ))}
+          </div>
+          {latestScraped.length === 0 && (
+            <p className="text-gray-500 text-center py-8">
+              No content scraped yet. Run the scraper to fetch content.
+            </p>
+          )}
+        </div>
+
+        {/* Content by Quadrant */}
+        <div className="space-y-4 mb-8">
+          <h2 className="text-lg font-semibold">Content by Category</h2>
+          {(Object.keys(quadrantConfig) as QuadrantKey[]).map((quadrant) => {
+            const config = quadrantConfig[quadrant];
+            const items = contentByQuadrant[quadrant] || [];
+            const Icon = config.icon;
+            const isExpanded = expandedQuadrants[quadrant];
+
+            return (
+              <div key={quadrant} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                <button
+                  onClick={() => toggleQuadrant(quadrant)}
+                  className="w-full flex items-center justify-between p-4 hover:bg-gray-800/50 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`${config.color} p-2 rounded-lg`}>
+                      <Icon className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-semibold">{config.label}</h3>
+                      <p className="text-gray-400 text-sm">{config.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.bgColor}`}>
+                      {items.length} items
+                    </span>
+                    {isExpanded ? (
+                      <ChevronUp className="w-5 h-5 text-gray-400" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    )}
+                  </div>
+                </button>
+
+                {isExpanded && items.length > 0 && (
+                  <div className="border-t border-gray-800 p-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {items.map((item) => (
+                        <ContentCard key={item.id} item={item} compact />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {isExpanded && items.length === 0 && (
+                  <div className="border-t border-gray-800 p-8 text-center text-gray-500">
+                    No content in this category yet.
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Recent Scripts */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Recent Scripts</h2>
-            <a
-              href="/scripts"
-              className="text-blue-400 hover:text-blue-300 text-sm"
-            >
+            <a href="/scripts" className="text-blue-400 hover:text-blue-300 text-sm">
               View all scripts
             </a>
           </div>
@@ -282,70 +363,60 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-
-        {/* Recent Content */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Recent Categorized Content</h2>
-            <a
-              href="/content"
-              className="text-blue-400 hover:text-blue-300 text-sm"
-            >
-              View all
-            </a>
-          </div>
-          <div className="space-y-3">
-            {recentContent.map((item) => {
-              const quadrant = item.quadrant as keyof typeof quadrantConfig;
-              const config = quadrantConfig[quadrant];
-              return (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-3 bg-gray-800 rounded-lg"
-                >
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {config && (
-                      <div className={`${config.color} p-1.5 rounded`}>
-                        <config.icon className="w-3 h-3 text-white" />
-                      </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate">{item.title}</p>
-                      <p className="text-sm text-gray-400 truncate">
-                        {item.ai_summary || 'No summary'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 ml-4">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        (item.relevance_score || 0) >= 7
-                          ? 'bg-green-500/20 text-green-400'
-                          : 'bg-gray-700 text-gray-300'
-                      }`}
-                    >
-                      {item.relevance_score || '-'}/10
-                    </span>
-                    <a
-                      href={item.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-white"
-                    >
-                      ↗
-                    </a>
-                  </div>
-                </div>
-              );
-            })}
-            {recentContent.length === 0 && (
-              <p className="text-gray-500 text-center py-8">
-                No categorized content yet. Run the scraper and categorization workflows.
-              </p>
-            )}
-          </div>
-        </div>
       </main>
+    </div>
+  );
+}
+
+function ContentCard({ item, compact }: { item: ContentItem; compact?: boolean }) {
+  const quadrant = item.quadrant as QuadrantKey;
+  const config = quadrant ? quadrantConfig[quadrant] : null;
+
+  return (
+    <div className={`bg-gray-800 rounded-lg p-4 ${compact ? '' : 'border border-gray-700'}`}>
+      <div className="flex items-start gap-3">
+        {config && (
+          <div className={`${config.color} p-1.5 rounded shrink-0`}>
+            <config.icon className="w-3 h-3 text-white" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            {item.relevance_score && (
+              <span
+                className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                  item.relevance_score >= 7
+                    ? 'bg-green-500/20 text-green-400'
+                    : item.relevance_score >= 5
+                    ? 'bg-yellow-500/20 text-yellow-400'
+                    : 'bg-gray-700 text-gray-400'
+                }`}
+              >
+                {item.relevance_score}/10
+              </span>
+            )}
+            <span className="text-gray-500 text-xs">
+              {item.scraped_at && format(new Date(item.scraped_at), 'MMM d')}
+            </span>
+          </div>
+          <a
+            href={item.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-sm hover:text-blue-400 transition line-clamp-2"
+          >
+            {item.title}
+          </a>
+          {item.ai_summary && (
+            <p className="text-gray-400 text-xs mt-1 line-clamp-2">{item.ai_summary}</p>
+          )}
+          {item.key_takeaways && !compact && (
+            <p className="text-gray-500 text-xs mt-2 line-clamp-2">
+              <span className="text-gray-400">Takeaways:</span> {item.key_takeaways}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
