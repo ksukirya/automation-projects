@@ -29,9 +29,15 @@ This repository contains n8n workflow automations designed for service businesse
 - Use error handling nodes for critical paths
 - Store credentials securely using n8n's credential system
 
-### n8n Workflow Building Skill
+### n8n Workflow Building Skills
 
-**IMPORTANT:** When building n8n workflows, writing expressions, configuring webhooks, or working with Code nodes, always refer to the skill documentation at `skills/skills/n8n-workflow-builder/SKILL.md`.
+**IMPORTANT:** When building n8n workflows, use the built-in n8n skills from the n8n-mcp server:
+
+- **n8n-expression-syntax**: Expression patterns and common mistakes
+- **n8n-mcp-tools-expert**: MCP tool usage for node search and validation
+- **n8n-code-javascript**: JavaScript in Code nodes
+- **n8n-code-python**: Python in Code nodes
+- **n8n-validation-expert**: Workflow validation and error fixing
 
 Key patterns to follow:
 - **Webhook data access**: Use `$json.body.field`, NOT `$json.field`
@@ -96,7 +102,6 @@ automation-projects/
 ├── scripts/            # Helper scripts (if any)
 ├── skills/             # Claude Code skills
 │   ├── skills/
-│   │   ├── n8n-workflow-builder/  # n8n workflow building skill
 │   │   ├── obsidian-vault/        # Obsidian note-taking skill
 │   │   └── subagent-orchestrator/ # Background agent orchestration
 │   └── n8n-docs/       # n8n documentation reference
