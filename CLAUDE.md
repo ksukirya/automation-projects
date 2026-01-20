@@ -39,6 +39,19 @@ Key patterns to follow:
 - **Expressions**: Use `{{ $json.field }}` syntax
 - **Python in Code nodes**: Use `_` prefix instead of `$` (e.g., `_json`, `_input`)
 
+### Obsidian Vault Skill
+
+**IMPORTANT:** When reading or writing notes to Obsidian, always refer to the skill documentation at `skills/skills/obsidian-vault/SKILL.md`.
+
+**Vault Location:** `C:\Users\Keshav\Documents\ObsidianVault`
+
+Key patterns to follow:
+- **Always include frontmatter**: Every note starts with YAML between `---` delimiters
+- **Use backlinks**: Link to other notes with `[[Note Name]]` syntax
+- **Use tags**: Categorize with `#tag` or nested `#category/subcategory`
+- **Folder structure**: Inbox → Daily → Projects → Areas → Resources → Archive
+- **File naming**: Daily notes as `YYYY-MM-DD.md`, descriptive names for others
+
 ## Working With Claude
 
 ### Before Starting Complex Tasks
@@ -65,10 +78,23 @@ automation-projects/
 ├── workflows/          # Exported n8n workflow JSON files
 ├── docs/               # Documentation for workflows
 ├── scripts/            # Helper scripts (if any)
-├── skills/             # Claude Code skills for n8n
-│   ├── skills/n8n-workflow-builder/  # Workflow building skill
+├── skills/             # Claude Code skills
+│   ├── skills/
+│   │   ├── n8n-workflow-builder/  # n8n workflow building skill
+│   │   └── obsidian-vault/        # Obsidian note-taking skill
 │   └── n8n-docs/       # n8n documentation reference
 └── CLAUDE.md           # This file
+
+Obsidian Vault (external):
+C:\Users\Keshav\Documents\ObsidianVault/
+├── 00-Inbox/           # New notes, unsorted
+├── 01-Daily/           # Daily notes
+├── 02-Projects/        # Active projects
+├── 03-Areas/           # Ongoing responsibilities
+├── 04-Resources/       # Reference material
+├── 05-Archive/         # Completed items
+├── Attachments/        # Images, PDFs
+└── Templates/          # Note templates
 ```
 
 ## Common Service Business Integrations
