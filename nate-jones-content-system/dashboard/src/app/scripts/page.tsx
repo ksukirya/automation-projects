@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowLeft, FileText, ExternalLink, CheckCircle, Clock, Video, Upload } from 'lucide-react';
+import { ArrowLeft, FileText, ExternalLink, CheckCircle, Clock, Video, Upload, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Script {
@@ -29,6 +29,7 @@ export default function ScriptsPage() {
   const [scripts, setScripts] = useState<Script[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     fetchScripts();
@@ -64,6 +65,24 @@ export default function ScriptsPage() {
       console.error('Error updating status:', error);
     }
     setUpdating(null);
+  };
+
+  const deleteScriptHandler = async (id: string, title: string) => {
+    if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
+
+    setDeleting(id);
+    try {
+      const res = await fetch(`/api/scripts?id=${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setScripts((prev) => prev.filter((s) => s.id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting script:', error);
+    }
+    setDeleting(null);
   };
 
   const getNextStatus = (current: Script['status']): Script['status'] | null => {
@@ -191,6 +210,21 @@ export default function ScriptsPage() {
                           Watch Video
                         </a>
                       )}
+
+                      <button
+                        onClick={() => deleteScriptHandler(script.id, script.script_title)}
+                        disabled={deleting === script.id}
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-800 hover:bg-red-600 rounded-lg transition text-sm text-gray-400 hover:text-white disabled:opacity-50"
+                      >
+                        {deleting === script.id ? (
+                          <Clock className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>

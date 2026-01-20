@@ -11,7 +11,10 @@ import {
   Clock,
   Play,
   RefreshCw,
+  ExternalLink,
+  Video,
 } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface Stats {
   total: number;
@@ -38,9 +41,21 @@ interface ContentItem {
   link: string;
 }
 
+interface Script {
+  id: string;
+  script_id: number;
+  script_date: string;
+  script_title: string;
+  google_doc_url: string;
+  word_count: number;
+  items_used: string;
+  status: 'draft' | 'approved' | 'recorded' | 'uploaded';
+}
+
 export default function Dashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentContent, setRecentContent] = useState<ContentItem[]>([]);
+  const [recentScripts, setRecentScripts] = useState<Script[]>([]);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState<string | null>(null);
 
@@ -51,16 +66,19 @@ export default function Dashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [statsRes, contentRes] = await Promise.all([
+      const [statsRes, contentRes, scriptsRes] = await Promise.all([
         fetch('/api/stats'),
         fetch('/api/content?status=categorized'),
+        fetch('/api/scripts'),
       ]);
 
       const statsData = await statsRes.json();
       const contentData = await contentRes.json();
+      const scriptsData = await scriptsRes.json();
 
       if (statsData.success) setStats(statsData.data);
       if (contentData.success) setRecentContent(contentData.data.slice(0, 10));
+      if (scriptsData.success) setRecentScripts(scriptsData.data.slice(0, 5));
     } catch (error) {
       console.error('Error fetching data:', error);
     }
@@ -124,7 +142,7 @@ export default function Dashboard() {
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <StatCard
             icon={<Clock className="w-5 h-5" />}
             label="Pending"
@@ -148,6 +166,13 @@ export default function Dashboard() {
             label="Ready for Script"
             value={stats?.readyForScript || 0}
             color="text-purple-500"
+          />
+          <StatCard
+            icon={<Video className="w-5 h-5" />}
+            label="Scripts Generated"
+            value={recentScripts.length}
+            color="text-red-500"
+            href="/scripts"
           />
         </div>
 
@@ -199,6 +224,62 @@ export default function Dashboard() {
               icon={<Play className="w-4 h-4" />}
               primary
             />
+          </div>
+        </div>
+
+        {/* Recent Scripts */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Recent Scripts</h2>
+            <a
+              href="/scripts"
+              className="text-blue-400 hover:text-blue-300 text-sm"
+            >
+              View all scripts
+            </a>
+          </div>
+          <div className="space-y-3">
+            {recentScripts.map((script) => {
+              const statusColors = {
+                draft: 'bg-yellow-500/20 text-yellow-400',
+                approved: 'bg-blue-500/20 text-blue-400',
+                recorded: 'bg-purple-500/20 text-purple-400',
+                uploaded: 'bg-green-500/20 text-green-400',
+              };
+              return (
+                <div
+                  key={script.id}
+                  className="flex items-center justify-between p-4 bg-gray-800 rounded-lg"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColors[script.status]}`}>
+                        {script.status}
+                      </span>
+                      <span className="text-gray-500 text-sm">
+                        {script.script_date && format(new Date(script.script_date), 'MMM d, yyyy')}
+                      </span>
+                    </div>
+                    <p className="font-medium truncate">{script.script_title}</p>
+                    <p className="text-sm text-gray-400">{script.word_count} words</p>
+                  </div>
+                  <a
+                    href={script.google_doc_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition text-sm ml-4"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Open
+                  </a>
+                </div>
+              );
+            })}
+            {recentScripts.length === 0 && (
+              <p className="text-gray-500 text-center py-8">
+                No scripts generated yet. Click "Generate Script" to create your first script.
+              </p>
+            )}
           </div>
         </div>
 
@@ -274,19 +355,35 @@ function StatCard({
   label,
   value,
   color,
+  href,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
   color: string;
+  href?: string;
 }) {
-  return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+  const content = (
+    <>
       <div className="flex items-center gap-2 mb-2">
         <span className={color}>{icon}</span>
         <span className="text-gray-400 text-sm">{label}</span>
       </div>
       <p className="text-3xl font-bold">{value}</p>
+    </>
+  );
+
+  if (href) {
+    return (
+      <a href={href} className="bg-gray-900 border border-gray-800 rounded-xl p-4 hover:border-gray-600 transition">
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+      {content}
     </div>
   );
 }

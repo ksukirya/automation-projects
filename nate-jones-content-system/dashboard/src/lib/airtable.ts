@@ -92,6 +92,10 @@ export async function updateScriptStatus(
   await scriptsTable.update(id, { status });
 }
 
+export async function deleteScript(id: string): Promise<void> {
+  await scriptsTable.destroy(id);
+}
+
 export async function getStats() {
   const content = await getContent();
 
