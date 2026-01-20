@@ -52,6 +52,22 @@ Key patterns to follow:
 - **Folder structure**: Inbox → Daily → Projects → Areas → Resources → Archive
 - **File naming**: Daily notes as `YYYY-MM-DD.md`, descriptive names for others
 
+### Subagent Orchestrator Skill
+
+**IMPORTANT:** When delegating complex tasks, spawning background agents, or running parallel research, refer to `skills/skills/subagent-orchestrator/SKILL.md`.
+
+Available agent templates:
+- **Research Agent**: Deep investigation of topics, technologies, codebases
+- **Documentation Agent**: Generate/update technical documentation
+- **Code Review Agent**: Security, quality, and best practices review
+- **n8n Workflow Builder Agent**: Autonomous workflow creation
+
+Key patterns:
+- Use `run_in_background: true` for long-running tasks
+- Launch parallel agents in a single message for concurrent work
+- Use `model: "opus"` for complex analysis, `"haiku"` for simple tasks
+- Check results with `Read(output_file)` or `TaskOutput`
+
 ## Working With Claude
 
 ### Before Starting Complex Tasks
@@ -81,7 +97,8 @@ automation-projects/
 ├── skills/             # Claude Code skills
 │   ├── skills/
 │   │   ├── n8n-workflow-builder/  # n8n workflow building skill
-│   │   └── obsidian-vault/        # Obsidian note-taking skill
+│   │   ├── obsidian-vault/        # Obsidian note-taking skill
+│   │   └── subagent-orchestrator/ # Background agent orchestration
 │   └── n8n-docs/       # n8n documentation reference
 └── CLAUDE.md           # This file
 
