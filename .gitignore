@@ -87,4 +87,23 @@ out/
 # Skills (cloned repo)
 # ===================
 # Keep skills folder but ignore its git history
-skills/.git/
+skills/
+
+# ===================
+# Temp & Workflow Files
+# ===================
+temp_workflow.json
+temp-workflow.txt
+*temp_workflow*.json
+nul
+
+# ===================
+# Playwright MCP
+# ===================
+.playwright-mcp/
+
+# ===================
+# Claude Local Settings
+# ===================
+.claude/*.local.md
+.claude/*.local.json
