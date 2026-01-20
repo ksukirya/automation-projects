@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Nate B Jones Content System",
-  description: "Daily AI news pipeline and script generator for Patrick",
+  title: "Reprise AI Content System",
+  description: "AI-powered content pipeline and script generator",
 };
 
 export default function RootLayout({
