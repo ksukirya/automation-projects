@@ -1,11 +1,25 @@
 import Airtable from 'airtable';
 
-const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
-  process.env.AIRTABLE_BASE_ID || ''
-);
+// Lazy initialization to ensure environment variables are available at runtime
+function getBase() {
+  if (!process.env.AIRTABLE_API_KEY) {
+    throw new Error('AIRTABLE_API_KEY is not configured');
+  }
+  if (!process.env.AIRTABLE_BASE_ID) {
+    throw new Error('AIRTABLE_BASE_ID is not configured');
+  }
+  return new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(
+    process.env.AIRTABLE_BASE_ID
+  );
+}
 
-export const contentTable = base('Content');
-export const scriptsTable = base('Scripts');
+function getContentTable() {
+  return getBase()('Content');
+}
+
+function getScriptsTable() {
+  return getBase()('Scripts');
+}
 
 export interface ContentItem {
   id: string;
@@ -50,7 +64,7 @@ export interface Script {
 }
 
 export async function getContent(filter?: string): Promise<ContentItem[]> {
-  const records = await contentTable
+  const records = await getContentTable()
     .select({
       filterByFormula: filter || '',
       sort: [{ field: 'scraped_at', direction: 'desc' }],
@@ -65,7 +79,7 @@ export async function getContent(filter?: string): Promise<ContentItem[]> {
 }
 
 export async function getScripts(): Promise<Script[]> {
-  const records = await scriptsTable
+  const records = await getScriptsTable()
     .select({
       sort: [{ field: 'script_date', direction: 'desc' }],
       maxRecords: 50,
@@ -82,18 +96,18 @@ export async function updateContentStatus(
   id: string,
   status: ContentItem['status']
 ): Promise<void> {
-  await contentTable.update(id, { status });
+  await getContentTable().update(id, { status });
 }
 
 export async function updateScriptStatus(
   id: string,
   status: Script['status']
 ): Promise<void> {
-  await scriptsTable.update(id, { status });
+  await getScriptsTable().update(id, { status });
 }
 
 export async function deleteScript(id: string): Promise<void> {
-  await scriptsTable.destroy(id);
+  await getScriptsTable().destroy(id);
 }
 
 export async function getStats() {
