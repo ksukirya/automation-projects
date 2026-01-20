@@ -1,0 +1,90 @@
+# ===================
+# n8n Specific
+# ===================
+# n8n database (SQLite)
+*.sqlite
+database.sqlite
+
+# n8n credentials and encryption keys
+.n8n/
+n8n-encryption-key.txt
+
+# Exported credentials (contain sensitive data)
+*credentials*.json
+!workflows/*-credentials-template.json
+
+# ===================
+# Sensitive Configuration
+# ===================
+.mcp.json
+config.json
+secrets.json
+*.pem
+*.key
+
+# Environment files
+.env
+.env.*
+.env.local
+.env.*.local
+!.env.example
+
+# ===================
+# Node.js
+# ===================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+.npm/
+
+# ===================
+# IDE & Editors
+# ===================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# ===================
+# OS Files
+# ===================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ===================
+# Logs
+# ===================
+logs/
+*.log
+
+# ===================
+# Temp & Cache
+# ===================
+tmp/
+temp/
+.cache/
+*.tmp
+*.bak
+
+# ===================
+# Build Output
+# ===================
+dist/
+build/
+out/
+
+# ===================
+# Skills (cloned repo)
+# ===================
+# Keep skills folder but ignore its git history
+skills/.git/
