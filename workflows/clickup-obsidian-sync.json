@@ -1,0 +1,384 @@
+{
+  "name": "ClickUp-Obsidian Bidirectional Sync with Slack Summary",
+  "nodes": [
+    {
+      "id": "schedule",
+      "name": "Daily 9AM Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 200],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "set_config",
+      "name": "Set Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [220, 200],
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "team_id",
+              "name": "team_id",
+              "value": "9013688424",
+              "type": "string"
+            },
+            {
+              "id": "obsidian_path",
+              "name": "obsidian_path",
+              "value": "C:\\Users\\Keshav\\Documents\\ObsidianVault\\02-Projects",
+              "type": "string"
+            },
+            {
+              "id": "slack_channel",
+              "name": "slack_channel",
+              "value": "projects",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "read_obsidian_files",
+      "name": "Read Obsidian Projects",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [440, 300],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "={{ $('Set Configuration').item.json.obsidian_path }}\\*.md",
+        "options": {}
+      }
+    },
+    {
+      "id": "parse_markdown",
+      "name": "Parse Markdown Files",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Parse Obsidian markdown files and extract frontmatter\nconst obsidianPath = $('Set Configuration').first().json.obsidian_path;\nconst obsidianFiles = [];\n\nfor (const item of $input.all()) {\n  try {\n    const binaryData = item.binary?.data;\n    if (!binaryData) continue;\n    \n    const content = Buffer.from(binaryData.data, 'base64').toString('utf8');\n    const fileName = binaryData.fileName || 'unknown.md';\n    \n    // Parse frontmatter (between --- delimiters)\n    const frontmatterMatch = content.match(/^---\\n([\\s\\S]*?)\\n---/);\n    if (!frontmatterMatch) continue;\n    \n    const frontmatter = {};\n    const lines = frontmatterMatch[1].split('\\n');\n    let currentKey = null;\n    let inArray = false;\n    let arrayValues = [];\n    \n    for (const line of lines) {\n      if (line.match(/^\\s+-\\s+/)) {\n        const value = line.replace(/^\\s+-\\s+/, '').trim();\n        arrayValues.push(value);\n      } else if (line.includes(':')) {\n        if (currentKey && inArray) {\n          frontmatter[currentKey] = arrayValues;\n          arrayValues = [];\n          inArray = false;\n        }\n        const [key, ...valueParts] = line.split(':');\n        const value = valueParts.join(':').trim();\n        currentKey = key.trim();\n        if (value === '') {\n          inArray = true;\n        } else {\n          frontmatter[currentKey] = value;\n        }\n      }\n    }\n    if (currentKey && inArray) {\n      frontmatter[currentKey] = arrayValues;\n    }\n    \n    // Build file path using system path separator\n    const filePath = obsidianPath + '\\\\' + fileName;\n    \n    obsidianFiles.push({\n      json: {\n        fileName,\n        filePath,\n        title: frontmatter.title || fileName.replace('.md', ''),\n        status: frontmatter.status || 'unknown',\n        priority: frontmatter.priority || 'medium',\n        clickup_id: frontmatter.clickup_id || null,\n        frontmatter,\n        content,\n        source: 'obsidian'\n      }\n    });\n  } catch (e) {\n    console.error('Error parsing file:', e);\n  }\n}\n\nreturn obsidianFiles.length > 0 ? obsidianFiles : [{ json: { message: 'No Obsidian projects found', source: 'obsidian' } }];"
+      }
+    },
+    {
+      "id": "get_team_tasks",
+      "name": "Get All Team Tasks",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 100],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.clickup.com/api/v2/team/{{ $('Set Configuration').item.json.team_id }}/task",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "subtasks", "value": "true" },
+            { "name": "include_closed", "value": "true" },
+            { "name": "page", "value": "0" }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "id": "check_api_response",
+      "name": "Check API Response",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [550, 100],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "check_tasks",
+              "operator": {
+                "type": "object",
+                "operation": "exists"
+              },
+              "leftValue": "={{ $json.tasks }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "filter_folders",
+      "name": "Filter by Target Folders",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 100],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Filter tasks to only include those from target folders\nconst targetFolders = [\n  'Traverse Legal - Enrico',\n  'Galileon - Mike', \n  'Aquagents - Chuck',\n  'DCCS - David',\n  'Impact3 - Jay & Gabi',\n  'Viking - Tanel',\n  'Reprise Internal',\n  'Kid & Grownup Dental',\n  'RPB Medical',\n  'San Diego Cardiac'\n];\n\nconst tasks = $input.first().json.tasks || [];\n\nconst filteredTasks = tasks\n  .filter(task => {\n    const folderName = task.folder?.name || '';\n    const listName = task.list?.name || '';\n    return targetFolders.some(f => \n      folderName.toLowerCase().includes(f.toLowerCase()) ||\n      listName.toLowerCase().includes(f.toLowerCase())\n    );\n  })\n  .map(task => ({\n    json: {\n      clickup_id: task.id,\n      name: task.name,\n      status: task.status?.status || 'unknown',\n      status_color: task.status?.color || '#808080',\n      priority: task.priority?.priority || 'normal',\n      folder: task.folder?.name || 'No Folder',\n      list: task.list?.name || 'No List',\n      due_date: task.due_date,\n      assignees: (task.assignees || []).map(a => a.username),\n      url: task.url,\n      source: 'clickup'\n    }\n  }));\n\nreturn filteredTasks.length > 0 ? filteredTasks : [{ json: { message: 'No tasks found', source: 'clickup' } }];"
+      }
+    },
+    {
+      "id": "api_error_handler",
+      "name": "Handle API Error",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 0],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// API call failed - return error info\nconst errorInfo = $input.first().json;\nreturn [{\n  json: {\n    error: true,\n    errorMessage: errorInfo.error?.message || errorInfo.message || 'ClickUp API request failed',\n    errorCode: errorInfo.error?.code || errorInfo.statusCode || 'UNKNOWN',\n    timestamp: new Date().toISOString()\n  }\n}];"
+      }
+    },
+    {
+      "id": "send_error_slack",
+      "name": "Send Error to Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [980, 0],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Set Configuration').item.json.slack_channel }}"
+        },
+        "text": "=:x: *ClickUp-Obsidian Sync Failed*\n\n*Error:* {{ $json.errorMessage }}\n*Code:* {{ $json.errorCode }}\n*Time:* {{ $json.timestamp }}\n\nPlease check the workflow execution for details.",
+        "otherOptions": {}
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "CONFIGURE_SLACK_CREDENTIALS",
+          "name": "Slack API"
+        }
+      }
+    },
+    {
+      "id": "merge_data",
+      "name": "Merge ClickUp and Obsidian",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [980, 200],
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      }
+    },
+    {
+      "id": "sync_logic",
+      "name": "Bidirectional Sync Logic",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 200],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Bidirectional sync logic between ClickUp and Obsidian\n\nconst clickupToObsidian = {\n  'signed & accepted': 'signed',\n  'onboarding form completed': 'onboarding',\n  'system access received': 'setup',\n  'initial setup phase': 'setup',\n  'in progress': 'in-progress',\n  'change request': 'change-request',\n  'waiting on client': 'on-hold',\n  'go-live phase': 'go-live',\n  'optimization phase': 'optimization',\n  'completed & maintaining': 'completed'\n};\n\nconst allItems = $input.all();\nconst clickupTasks = allItems.filter(i => i.json.source === 'clickup' && !i.json.message);\nconst obsidianProjects = allItems.filter(i => i.json.source === 'obsidian' && !i.json.message);\n\nconst updates = {\n  obsidianUpdates: [],\n  clickupUpdates: [],\n  newObsidianProjects: [],\n  summary: {\n    byStatus: {},\n    byFolder: {},\n    total: 0,\n    synced: 0,\n    needsAttention: []\n  }\n};\n\nconst obsidianByClickupId = new Map();\nfor (const proj of obsidianProjects) {\n  if (proj.json.clickup_id) {\n    obsidianByClickupId.set(proj.json.clickup_id, proj.json);\n  }\n}\n\nfor (const task of clickupTasks) {\n  const t = task.json;\n  updates.summary.total++;\n  \n  const statusKey = t.status.toLowerCase();\n  updates.summary.byStatus[statusKey] = (updates.summary.byStatus[statusKey] || 0) + 1;\n  updates.summary.byFolder[t.folder] = (updates.summary.byFolder[t.folder] || 0) + 1;\n  \n  let obsidianProject = obsidianByClickupId.get(t.clickup_id);\n  \n  if (obsidianProject) {\n    const expectedObsidianStatus = clickupToObsidian[statusKey] || statusKey;\n    if (obsidianProject.status !== expectedObsidianStatus) {\n      updates.obsidianUpdates.push({\n        filePath: obsidianProject.filePath,\n        oldStatus: obsidianProject.status,\n        newStatus: expectedObsidianStatus,\n        clickupStatus: t.status,\n        content: obsidianProject.content\n      });\n    }\n    updates.summary.synced++;\n  } else {\n    updates.newObsidianProjects.push({\n      clickup_id: t.clickup_id,\n      name: t.name,\n      status: t.status,\n      folder: t.folder,\n      list: t.list,\n      url: t.url\n    });\n  }\n  \n  if (statusKey === 'waiting on client' || statusKey === 'change request') {\n    updates.summary.needsAttention.push(t);\n  }\n}\n\nreturn [{ json: updates }];"
+      }
+    },
+    {
+      "id": "build_slack_message",
+      "name": "Build Slack Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1420, 200],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const data = $input.first().json;\nconst today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });\n\nconst statusEmoji = {\n  'signed & accepted': ':white_check_mark:',\n  'onboarding form completed': ':clipboard:',\n  'system access received': ':key:',\n  'initial setup phase': ':gear:',\n  'in progress': ':hammer_and_wrench:',\n  'change request': ':memo:',\n  'waiting on client': ':hourglass_flowing_sand:',\n  'go-live phase': ':rocket:',\n  'optimization phase': ':chart_with_upwards_trend:',\n  'completed & maintaining': ':star:'\n};\n\nlet message = `*Daily Project Status Summary*\\n_${today}_\\n\\n`;\nmessage += `*Total Projects:* ${data.summary.total} | *Synced with Obsidian:* ${data.summary.synced}\\n\\n`;\n\nmessage += '*Status Breakdown:*\\n';\nfor (const [status, count] of Object.entries(data.summary.byStatus).sort((a, b) => b[1] - a[1])) {\n  const emoji = statusEmoji[status] || ':small_blue_diamond:';\n  message += `${emoji} ${status}: *${count}*\\n`;\n}\n\nmessage += '\\n*By Client/Folder:*\\n';\nfor (const [folder, count] of Object.entries(data.summary.byFolder).sort((a, b) => b[1] - a[1])) {\n  message += `:file_folder: ${folder}: *${count}*\\n`;\n}\n\nif (data.summary.needsAttention.length > 0) {\n  message += '\\n:warning: *Needs Attention:*\\n';\n  for (const task of data.summary.needsAttention.slice(0, 5)) {\n    message += `• <${task.url}|${task.name}> - ${task.folder} (${task.status})\\n`;\n  }\n  if (data.summary.needsAttention.length > 5) {\n    message += `_...and ${data.summary.needsAttention.length - 5} more_\\n`;\n  }\n}\n\nif (data.obsidianUpdates.length > 0) {\n  message += `\\n:arrows_counterclockwise: *Obsidian Sync Updates:* ${data.obsidianUpdates.length} files need updating\\n`;\n}\n\nif (data.newObsidianProjects.length > 0) {\n  message += `\\n:new: *Not in Obsidian:* ${data.newObsidianProjects.length} ClickUp tasks without matching notes\\n`;\n}\n\nreturn [{ json: { slackMessage: message, updates: data } }];"
+      }
+    },
+    {
+      "id": "send_slack",
+      "name": "Send Slack Message",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [1640, 200],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "={{ $('Set Configuration').item.json.slack_channel }}"
+        },
+        "text": "={{ $json.slackMessage }}",
+        "otherOptions": {}
+      },
+      "credentials": {
+        "slackApi": {
+          "id": "CONFIGURE_SLACK_CREDENTIALS",
+          "name": "Slack API"
+        }
+      }
+    },
+    {
+      "id": "split_updates",
+      "name": "Split for Updates",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1420, 400],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Extract files that need updating\nconst data = $input.first().json;\nconst filesToUpdate = data.obsidianUpdates || [];\n\nif (filesToUpdate.length === 0) {\n  return [{ json: { message: 'No files need updating' } }];\n}\n\n// Return each file as separate item for processing\nreturn filesToUpdate.map(file => {\n  // Update status in frontmatter\n  const updatedContent = file.content.replace(\n    /status:\\s*[\\w-]+/,\n    `status: ${file.newStatus}`\n  );\n  \n  return {\n    json: {\n      filePath: file.filePath,\n      oldStatus: file.oldStatus,\n      newStatus: file.newStatus,\n      content: updatedContent\n    }\n  };\n});"
+      }
+    },
+    {
+      "id": "check_updates_needed",
+      "name": "Check if Updates Needed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1640, 400],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "version": 2,
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "check_message",
+              "operator": {
+                "type": "string",
+                "operation": "notExists"
+              },
+              "leftValue": "={{ $json.message }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "convert_to_binary",
+      "name": "Convert to Binary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1860, 400],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Convert text content to binary for file writing\nconst content = $input.item.json.content;\nconst filePath = $input.item.json.filePath;\n\nif (!content) {\n  return $input.item;\n}\n\nconst binaryData = Buffer.from(content, 'utf8').toString('base64');\nconst fileName = filePath.split('\\\\').pop();\n\nreturn {\n  json: $input.item.json,\n  binary: {\n    data: {\n      data: binaryData,\n      mimeType: 'text/markdown',\n      fileName: fileName\n    }\n  }\n};"
+      }
+    },
+    {
+      "id": "write_files",
+      "name": "Write Updated Files",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [2080, 400],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $json.filePath }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "sticky_setup",
+      "name": "Setup Instructions",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-200, -100],
+      "parameters": {
+        "content": "## Setup Instructions\n\n### 1. ClickUp API Credentials\n- Go to ClickUp Settings > Apps > Generate API Token\n- In n8n, create HTTP Header Auth credential\n- Header Name: `Authorization`\n- Header Value: `pk_YOUR_CLICKUP_TOKEN`\n\n### 2. Slack Credentials\n- Create a Slack App at api.slack.com\n- Add `chat:write` scope\n- Install to workspace\n- Use OAuth token in n8n Slack credential\n\n### 3. Configuration\n- Update `team_id` in Set Configuration node\n- Update `slack_channel` to your channel name\n- Verify Obsidian path is correct\n\n### 4. File Permissions\n- Ensure n8n has read/write access to Obsidian vault"
+      }
+    },
+    {
+      "id": "sticky_flow",
+      "name": "Workflow Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [880, -100],
+      "parameters": {
+        "content": "## Workflow Overview\n\n**Trigger:** Daily at 9 AM\n\n**Flow:**\n1. Fetch all ClickUp tasks for team\n2. Read Obsidian project files\n3. Compare and sync statuses\n4. Post summary to Slack\n5. Update Obsidian files with new statuses\n\n**Error Handling:**\n- API failures send error notification to Slack\n- Files with no updates are skipped"
+      }
+    }
+  ],
+  "connections": {
+    "Daily 9AM Trigger": {
+      "main": [[{ "node": "Set Configuration", "type": "main", "index": 0 }]]
+    },
+    "Set Configuration": {
+      "main": [[
+        { "node": "Get All Team Tasks", "type": "main", "index": 0 },
+        { "node": "Read Obsidian Projects", "type": "main", "index": 0 }
+      ]]
+    },
+    "Get All Team Tasks": {
+      "main": [[{ "node": "Check API Response", "type": "main", "index": 0 }]]
+    },
+    "Check API Response": {
+      "main": [
+        [{ "node": "Filter by Target Folders", "type": "main", "index": 0 }],
+        [{ "node": "Handle API Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Handle API Error": {
+      "main": [[{ "node": "Send Error to Slack", "type": "main", "index": 0 }]]
+    },
+    "Read Obsidian Projects": {
+      "main": [[{ "node": "Parse Markdown Files", "type": "main", "index": 0 }]]
+    },
+    "Filter by Target Folders": {
+      "main": [[{ "node": "Merge ClickUp and Obsidian", "type": "main", "index": 0 }]]
+    },
+    "Parse Markdown Files": {
+      "main": [[{ "node": "Merge ClickUp and Obsidian", "type": "main", "index": 1 }]]
+    },
+    "Merge ClickUp and Obsidian": {
+      "main": [[{ "node": "Bidirectional Sync Logic", "type": "main", "index": 0 }]]
+    },
+    "Bidirectional Sync Logic": {
+      "main": [[
+        { "node": "Build Slack Summary", "type": "main", "index": 0 },
+        { "node": "Split for Updates", "type": "main", "index": 0 }
+      ]]
+    },
+    "Build Slack Summary": {
+      "main": [[{ "node": "Send Slack Message", "type": "main", "index": 0 }]]
+    },
+    "Split for Updates": {
+      "main": [[{ "node": "Check if Updates Needed", "type": "main", "index": 0 }]]
+    },
+    "Check if Updates Needed": {
+      "main": [
+        [{ "node": "Convert to Binary", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "Convert to Binary": {
+      "main": [[{ "node": "Write Updated Files", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

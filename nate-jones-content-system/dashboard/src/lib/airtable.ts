@@ -68,7 +68,7 @@ export async function getContent(filter?: string): Promise<ContentItem[]> {
     .select({
       filterByFormula: filter || '',
       sort: [{ field: 'scraped_at', direction: 'desc' }],
-      maxRecords: 100,
+      maxRecords: 500,
     })
     .all();
 
