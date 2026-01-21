@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Workflow IDs for n8n API execution
+// Workflow IDs for reference
 const workflowIds: Record<string, string> = {
-  scraper: 'AGVGfqPEhBO9Zs4l',
+  scraper: '54RVos8ZQI2MEPRP',      // AI Newsletter - Content Scraper
+  youtube: 'AGVGfqPEhBO9Zs4l',       // YouTube Channels - Content Scraper
   categorize: 'xsu7Wa8gzTrkbtdM',
   script: 'XRtGZR0MolxzBQw9',
 };
@@ -12,19 +13,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { workflow, selectedContentIds } = body;
 
-    // For scraper: n8n Cloud doesn't support API execution or auto-registered webhooks
-    // The scraper runs automatically every 6 hours, or can be manually triggered in n8n UI
-    if (workflow === 'scraper') {
-      return NextResponse.json({
-        success: true,
-        message: 'Scraper runs automatically every 6 hours. To run manually, open the workflow in n8n.',
-        manualTriggerUrl: `https://keshavs.app.n8n.cloud/workflow/${workflowIds.scraper}`,
-        note: 'Click "Test workflow" button in n8n to run manually',
-      });
-    }
-
-    // For other workflows, use webhooks
+    // All workflows use webhooks
     const webhookUrls: Record<string, string> = {
+      scraper: process.env.N8N_SCRAPER_WEBHOOK || '',
+      youtube: process.env.N8N_YOUTUBE_WEBHOOK || '',
       categorize: process.env.N8N_CATEGORIZE_WEBHOOK || '',
       script: process.env.N8N_SCRIPT_WEBHOOK || '',
     };
