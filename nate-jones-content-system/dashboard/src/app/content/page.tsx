@@ -6,10 +6,12 @@ import {
   FileText,
   TrendingUp,
   Briefcase,
-  ArrowLeft,
   ExternalLink,
   Filter,
+  X,
+  Search,
 } from 'lucide-react';
+import { GlassCard, ContentCardSkeleton } from '@/components/ui';
 
 interface ContentItem {
   id: string;
@@ -32,11 +34,19 @@ interface ContentItem {
   scraped_at: string;
 }
 
-const quadrantConfig = {
-  BREAKING: { icon: Zap, color: 'bg-red-500', textColor: 'text-red-400', label: 'Breaking' },
-  STRATEGY: { icon: TrendingUp, color: 'bg-blue-500', textColor: 'text-blue-400', label: 'Strategy' },
-  MARKET: { icon: Briefcase, color: 'bg-green-500', textColor: 'text-green-400', label: 'Market' },
-  CAREER: { icon: FileText, color: 'bg-purple-500', textColor: 'text-purple-400', label: 'Career' },
+type QuadrantKey = 'BREAKING' | 'STRATEGY' | 'MARKET' | 'CAREER';
+
+const quadrantConfig: Record<QuadrantKey, {
+  icon: typeof Zap;
+  color: string;
+  bgColor: string;
+  badgeClass: string;
+  label: string;
+}> = {
+  BREAKING: { icon: Zap, color: 'text-red-400', bgColor: 'bg-red-500/10', badgeClass: 'badge-red', label: 'Breaking' },
+  STRATEGY: { icon: TrendingUp, color: 'text-blue-400', bgColor: 'bg-blue-500/10', badgeClass: 'badge-blue', label: 'Strategy' },
+  MARKET: { icon: Briefcase, color: 'text-green-400', bgColor: 'bg-green-500/10', badgeClass: 'badge-green', label: 'Market' },
+  CAREER: { icon: FileText, color: 'text-purple-400', bgColor: 'bg-purple-500/10', badgeClass: 'badge-purple', label: 'Career' },
 };
 
 export default function ContentPage() {
@@ -78,58 +88,57 @@ export default function ContentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="space-y-8">
       {/* Header */}
-      <header className="border-b border-gray-800 px-6 py-4">
-        <div className="max-w-7xl mx-auto">
-          <a href="/" className="inline-flex items-center gap-2 text-gray-400 hover:text-white mb-4">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Dashboard
-          </a>
-          <h1 className="text-2xl font-bold">Content Library</h1>
-          <p className="text-gray-400 text-sm">Browse and filter all scraped content</p>
-        </div>
-      </header>
+      <div className="opacity-0 animate-fade-in">
+        <h1 className="text-3xl font-bold gradient-text">Content Library</h1>
+        <p className="text-gray-400 mt-1">Browse and filter all scraped content</p>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-gray-400" />
-            <span className="text-gray-400 text-sm">Filters:</span>
+      {/* Filters */}
+      <GlassCard className="opacity-0 animate-fade-in" style={{ animationDelay: '50ms' } as React.CSSProperties}>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2 text-gray-400">
+            <Filter className="w-4 h-4" />
+            <span className="text-sm font-medium">Filters</span>
           </div>
 
           {/* Quadrant Filter */}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setFilter((f) => ({ ...f, quadrant: null }))}
               className={`px-3 py-1.5 rounded-lg text-sm transition ${
-                !filter.quadrant ? 'bg-white text-black' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                !filter.quadrant
+                  ? 'bg-white/10 text-white border border-white/20'
+                  : 'glass text-gray-400 hover:text-white'
               }`}
             >
-              All Quadrants
+              All Categories
             </button>
-            {Object.entries(quadrantConfig).map(([key, config]) => (
-              <button
-                key={key}
-                onClick={() => setFilter((f) => ({ ...f, quadrant: key }))}
-                className={`px-3 py-1.5 rounded-lg text-sm transition flex items-center gap-1.5 ${
-                  filter.quadrant === key
-                    ? `${config.color} text-white`
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                }`}
-              >
-                <config.icon className="w-3 h-3" />
-                {config.label}
-              </button>
-            ))}
+            {(Object.entries(quadrantConfig) as [QuadrantKey, typeof quadrantConfig[QuadrantKey]][]).map(([key, config]) => {
+              const Icon = config.icon;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setFilter((f) => ({ ...f, quadrant: key }))}
+                  className={`px-3 py-1.5 rounded-lg text-sm transition flex items-center gap-1.5 ${
+                    filter.quadrant === key
+                      ? `${config.bgColor} ${config.color} border border-current/30`
+                      : 'glass text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {config.label}
+                </button>
+              );
+            })}
           </div>
 
           {/* Status Filter */}
           <select
             value={filter.status || ''}
             onChange={(e) => setFilter((f) => ({ ...f, status: e.target.value || null }))}
-            className="px-3 py-1.5 rounded-lg text-sm bg-gray-800 text-gray-300 border-none"
+            className="glass-input px-3 py-1.5 text-sm text-gray-300"
           >
             <option value="">All Status</option>
             <option value="pending_categorization">Pending</option>
@@ -138,146 +147,189 @@ export default function ContentPage() {
             <option value="used_in_script">Used in Script</option>
           </select>
         </div>
+      </GlassCard>
 
-        <div className="flex gap-6">
-          {/* Content List */}
-          <div className="flex-1 space-y-3">
-            {loading ? (
-              <div className="text-center py-12 text-gray-500">Loading...</div>
-            ) : content.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">No content found</div>
-            ) : (
-              content.map((item) => {
-                const quadrant = item.quadrant as keyof typeof quadrantConfig;
-                const config = quadrantConfig[quadrant];
-                return (
-                  <div
-                    key={item.id}
-                    onClick={() => setSelectedItem(item)}
-                    className={`p-4 bg-gray-900 border rounded-xl cursor-pointer transition hover:border-gray-600 ${
-                      selectedItem?.id === item.id ? 'border-blue-500' : 'border-gray-800'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2">
-                          {config && (
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${config.color} text-white`}>
-                              {config.label}
-                            </span>
-                          )}
-                          <span className="text-xs text-gray-500">{item.source_type}</span>
-                          {item.urgency === 'HIGH' && (
-                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-500/20 text-red-400">
-                              Urgent
-                            </span>
-                          )}
-                        </div>
-                        <h3 className="font-medium mb-1 line-clamp-2">{item.title}</h3>
-                        <p className="text-sm text-gray-400 line-clamp-2">
-                          {item.ai_summary || item.description || 'No description'}
-                        </p>
+      <div className="flex gap-6">
+        {/* Content List */}
+        <div className="flex-1 space-y-3">
+          {loading ? (
+            <>
+              <ContentCardSkeleton />
+              <ContentCardSkeleton />
+              <ContentCardSkeleton />
+              <ContentCardSkeleton />
+            </>
+          ) : content.length === 0 ? (
+            <GlassCard className="text-center py-16">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/5 flex items-center justify-center">
+                <Search className="w-10 h-10 text-gray-500" />
+              </div>
+              <p className="text-gray-400 text-lg">No content found</p>
+              <p className="text-gray-500 text-sm mt-2">
+                Try adjusting your filters or run the scraper
+              </p>
+            </GlassCard>
+          ) : (
+            content.map((item, index) => {
+              const quadrant = item.quadrant as QuadrantKey;
+              const config = quadrantConfig[quadrant];
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => setSelectedItem(item)}
+                  className={`glass glass-hover p-4 cursor-pointer opacity-0 animate-fade-in ${
+                    selectedItem?.id === item.id ? 'border-purple-500/50' : ''
+                  }`}
+                  style={{ animationDelay: `${100 + index * 30}ms` } as React.CSSProperties}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        {config && (
+                          <span className={`badge ${config.badgeClass}`}>
+                            <config.icon className="w-3 h-3" />
+                            {config.label}
+                          </span>
+                        )}
+                        <span className="text-xs text-gray-500">{item.source_type}</span>
+                        {item.urgency === 'HIGH' && (
+                          <span className="badge badge-red">Urgent</span>
+                        )}
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-bold ${
-                            (item.relevance_score || 0) >= 7
-                              ? 'bg-green-500/20 text-green-400'
-                              : (item.relevance_score || 0) >= 5
-                              ? 'bg-yellow-500/20 text-yellow-400'
-                              : 'bg-gray-700 text-gray-400'
-                          }`}
-                        >
-                          {item.relevance_score || '-'}/10
-                        </span>
-                        <a
-                          href={item.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-gray-400 hover:text-white"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </a>
-                      </div>
+                      <h3 className="font-medium mb-1 line-clamp-2 hover:text-purple-400 transition">
+                        {item.title}
+                      </h3>
+                      <p className="text-sm text-gray-400 line-clamp-2">
+                        {item.ai_summary || item.description || 'No description'}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <span
+                        className={`badge ${
+                          (item.relevance_score || 0) >= 7
+                            ? 'badge-green'
+                            : (item.relevance_score || 0) >= 5
+                            ? 'badge-yellow'
+                            : 'badge-gray'
+                        }`}
+                      >
+                        {item.relevance_score || '-'}/10
+                      </span>
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-gray-400 hover:text-purple-400 transition"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
                     </div>
                   </div>
-                );
-              })
-            )}
-          </div>
+                </div>
+              );
+            })
+          )}
+        </div>
 
-          {/* Detail Panel */}
-          {selectedItem && (
-            <div className="w-96 bg-gray-900 border border-gray-800 rounded-xl p-6 sticky top-6 h-fit max-h-[calc(100vh-120px)] overflow-y-auto">
+        {/* Detail Panel */}
+        {selectedItem && (
+          <div className="hidden lg:block w-96 shrink-0">
+            <GlassCard className="sticky top-6 max-h-[calc(100vh-120px)] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Details</h2>
+                <h2 className="text-lg font-semibold gradient-text">Details</h2>
                 <button
                   onClick={() => setSelectedItem(null)}
-                  className="text-gray-400 hover:text-white"
+                  className="p-1.5 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition"
                 >
-                  ×
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <h3 className="font-medium mb-4">{selectedItem.title}</h3>
+              <h3 className="font-medium mb-4 leading-relaxed">{selectedItem.title}</h3>
 
               <div className="space-y-4">
-                <div>
-                  <label className="text-xs text-gray-500 uppercase tracking-wider">Quadrant</label>
-                  <p className={quadrantConfig[selectedItem.quadrant as keyof typeof quadrantConfig]?.textColor || 'text-gray-400'}>
-                    {selectedItem.quadrant || 'Not categorized'}
+                <DetailSection label="Category">
+                  {selectedItem.quadrant ? (
+                    <span className={`badge ${quadrantConfig[selectedItem.quadrant as QuadrantKey]?.badgeClass || 'badge-gray'}`}>
+                      {selectedItem.quadrant}
+                    </span>
+                  ) : (
+                    <span className="text-gray-500">Not categorized</span>
+                  )}
+                </DetailSection>
+
+                <DetailSection label="Relevance">
+                  <span className={`badge ${
+                    (selectedItem.relevance_score || 0) >= 7
+                      ? 'badge-green'
+                      : (selectedItem.relevance_score || 0) >= 5
+                      ? 'badge-yellow'
+                      : 'badge-gray'
+                  }`}>
+                    {selectedItem.relevance_score || '-'}/10
+                  </span>
+                </DetailSection>
+
+                <DetailSection label="AI Summary">
+                  <p className="text-sm text-gray-300 leading-relaxed">
+                    {selectedItem.ai_summary || 'No summary available'}
                   </p>
-                </div>
-
-                <div>
-                  <label className="text-xs text-gray-500 uppercase tracking-wider">Relevance</label>
-                  <p>{selectedItem.relevance_score || '-'}/10</p>
-                </div>
-
-                <div>
-                  <label className="text-xs text-gray-500 uppercase tracking-wider">AI Summary</label>
-                  <p className="text-sm text-gray-300">{selectedItem.ai_summary || 'No summary'}</p>
-                </div>
+                </DetailSection>
 
                 {parseJSON(selectedItem.key_takeaways).length > 0 && (
-                  <div>
-                    <label className="text-xs text-gray-500 uppercase tracking-wider">Key Takeaways</label>
-                    <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
+                  <DetailSection label="Key Takeaways">
+                    <ul className="space-y-2">
                       {parseJSON(selectedItem.key_takeaways).map((point, i) => (
-                        <li key={i}>{point}</li>
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                          <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-2 shrink-0" />
+                          {point}
+                        </li>
                       ))}
                     </ul>
-                  </div>
+                  </DetailSection>
                 )}
 
                 {parseJSON(selectedItem.talking_points).length > 0 && (
-                  <div>
-                    <label className="text-xs text-gray-500 uppercase tracking-wider">Talking Points</label>
-                    <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
+                  <DetailSection label="Talking Points">
+                    <ul className="space-y-2">
                       {parseJSON(selectedItem.talking_points).map((point, i) => (
-                        <li key={i}>{point}</li>
+                        <li key={i} className="flex items-start gap-2 text-sm text-gray-300">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 shrink-0" />
+                          {point}
+                        </li>
                       ))}
                     </ul>
-                  </div>
+                  </DetailSection>
                 )}
 
-                <div className="pt-4 border-t border-gray-800">
+                <div className="pt-4 border-t border-white/5">
                   <a
                     href={selectedItem.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full py-2 bg-blue-600 hover:bg-blue-500 rounded-lg transition"
+                    className="btn-primary flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-medium"
                   >
                     <ExternalLink className="w-4 h-4" />
                     View Original
                   </a>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      </main>
+            </GlassCard>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function DetailSection({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="text-xs text-gray-500 uppercase tracking-wider font-medium">
+        {label}
+      </label>
+      <div className="mt-1.5">{children}</div>
     </div>
   );
 }
