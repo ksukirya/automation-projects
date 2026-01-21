@@ -183,14 +183,14 @@ export default function ScriptsPage() {
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
                       <span className="flex items-center gap-1.5">
                         <FileText className="w-4 h-4" />
-                        {script.word_count.toLocaleString()} words
+                        {(script.word_count || 0).toLocaleString()} words
                       </span>
                       <span className="w-1 h-1 rounded-full bg-gray-600" />
                       <span>{itemsUsed} content items</span>
                       <span className="w-1 h-1 rounded-full bg-gray-600" />
                       <span className="flex items-center gap-1.5">
                         <Clock className="w-4 h-4" />
-                        ~{Math.round(script.word_count / 150)} min read
+                        ~{Math.round((script.word_count || 0) / 150)} min read
                       </span>
                     </div>
 

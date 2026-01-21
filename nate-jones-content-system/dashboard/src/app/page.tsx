@@ -16,6 +16,9 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  Check,
+  X,
+  Sparkles,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -116,6 +119,8 @@ export default function Dashboard() {
     MARKET: false,
     CAREER: false,
   });
+  const [selectedContent, setSelectedContent] = useState<Set<string>>(new Set());
+  const [selectionMode, setSelectionMode] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -192,6 +197,64 @@ export default function Dashboard() {
 
   const toggleQuadrant = (quadrant: string) => {
     setExpandedQuadrants(prev => ({ ...prev, [quadrant]: !prev[quadrant] }));
+  };
+
+  const toggleContentSelection = (id: string) => {
+    setSelectedContent(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedContent(new Set());
+    setSelectionMode(false);
+  };
+
+  const selectAllInQuadrant = (quadrant: QuadrantKey) => {
+    const items = contentByQuadrant[quadrant] || [];
+    setSelectedContent(prev => {
+      const next = new Set(prev);
+      items.forEach(item => next.add(item.id));
+      return next;
+    });
+  };
+
+  const generateScriptWithSelected = async () => {
+    if (selectedContent.size === 0) {
+      toast.error('Please select at least one article');
+      return;
+    }
+
+    setTriggering('script');
+    const toastId = toast.loading(`Generating script with ${selectedContent.size} selected articles...`);
+
+    try {
+      const res = await fetch('/api/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          workflow: 'script',
+          selectedContentIds: Array.from(selectedContent),
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Script generation started with your selected articles', { id: toastId });
+        clearSelection();
+        setTimeout(fetchData, 2000);
+      } else {
+        toast.error(`Failed to generate script: ${data.error}`, { id: toastId });
+      }
+    } catch (error) {
+      toast.error('Failed to generate script', { id: toastId });
+    }
+    setTriggering(null);
   };
 
   const contentByQuadrant = allContent.reduce((acc, item) => {
@@ -274,7 +337,7 @@ export default function Dashboard() {
           <Zap className="w-5 h-5 text-purple-400" />
           Quick Actions
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <ActionButton
             label="Run Scraper"
             description="Fetch latest content from channels"
@@ -290,12 +353,25 @@ export default function Dashboard() {
             icon={<Zap className="w-4 h-4" />}
           />
           <ActionButton
-            label="Generate Script"
-            description="Create today's video script"
+            label="Auto Generate Script"
+            description="Use all high-relevance content"
             onClick={() => triggerWorkflow('script')}
-            loading={triggering === 'script'}
+            loading={triggering === 'script' && !selectionMode}
             icon={<Play className="w-4 h-4" />}
-            primary
+          />
+          <ActionButton
+            label={selectionMode ? 'Cancel Selection' : 'Select Articles'}
+            description={selectionMode ? 'Exit selection mode' : 'Pick specific articles for script'}
+            onClick={() => {
+              if (selectionMode) {
+                clearSelection();
+              } else {
+                setSelectionMode(true);
+              }
+            }}
+            loading={false}
+            icon={selectionMode ? <X className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
+            primary={!selectionMode}
           />
         </div>
       </GlassCard>
@@ -303,12 +379,33 @@ export default function Dashboard() {
       {/* Latest Scraped Content */}
       <GlassCard className="opacity-0 animate-fade-in" style={{ animationDelay: '300ms' } as React.CSSProperties}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Latest Scraped Content</h2>
-          <span className="badge badge-gray">{latestScraped.length} items</span>
+          <h2 className="text-lg font-semibold">
+            {selectionMode ? 'Select Articles for Script' : 'Latest Scraped Content'}
+          </h2>
+          <div className="flex items-center gap-2">
+            {selectionMode && (
+              <span className="badge badge-purple">
+                {selectedContent.size} selected
+              </span>
+            )}
+            <span className="badge badge-gray">{latestScraped.length} items</span>
+          </div>
         </div>
+        {selectionMode && (
+          <p className="text-gray-400 text-sm mb-4">
+            Click on articles to select them for your custom script. You can also expand categories below to select from specific quadrants.
+          </p>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {latestScraped.map((item, index) => (
-            <ContentCard key={item.id} item={item} delay={index * 30} />
+            <ContentCard
+              key={item.id}
+              item={item}
+              delay={index * 30}
+              selectable={selectionMode}
+              selected={selectedContent.has(item.id)}
+              onToggleSelect={toggleContentSelection}
+            />
           ))}
         </div>
         {latestScraped.length === 0 && (
@@ -373,9 +470,25 @@ export default function Dashboard() {
                 }}
               >
                 <div className="border-t border-white/5 p-4">
+                  {selectionMode && items.length > 0 && (
+                    <button
+                      onClick={() => selectAllInQuadrant(quadrant)}
+                      className="mb-3 text-sm text-purple-400 hover:text-purple-300 flex items-center gap-1"
+                    >
+                      <Check className="w-3 h-3" />
+                      Select all in {config.label}
+                    </button>
+                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {items.map((item) => (
-                      <ContentCard key={item.id} item={item} compact />
+                      <ContentCard
+                        key={item.id}
+                        item={item}
+                        compact
+                        selectable={selectionMode}
+                        selected={selectedContent.has(item.id)}
+                        onToggleSelect={toggleContentSelection}
+                      />
                     ))}
                   </div>
                 </div>
@@ -423,27 +536,109 @@ export default function Dashboard() {
           )}
         </div>
       </GlassCard>
+
+      {/* Floating Selection Bar */}
+      {selectionMode && selectedContent.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-fade-in">
+          <div className="glass flex items-center gap-4 px-6 py-4 rounded-2xl shadow-2xl border border-purple-500/30">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-purple-400" />
+              </div>
+              <div>
+                <p className="font-medium">{selectedContent.size} articles selected</p>
+                <p className="text-gray-400 text-xs">Ready for script generation</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={clearSelection}
+                className="glass glass-hover px-4 py-2 rounded-xl text-sm flex items-center gap-2"
+              >
+                <X className="w-4 h-4" />
+                Clear
+              </button>
+              <button
+                onClick={generateScriptWithSelected}
+                disabled={triggering === 'script'}
+                className="btn-primary px-6 py-2 rounded-xl text-sm font-medium flex items-center gap-2 disabled:opacity-50"
+              >
+                {triggering === 'script' ? (
+                  <Loader2 className="w-4 h-4 spinner" />
+                ) : (
+                  <Play className="w-4 h-4" />
+                )}
+                Generate Script
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function ContentCard({ item, compact, delay = 0 }: { item: ContentItem; compact?: boolean; delay?: number }) {
+function ContentCard({
+  item,
+  compact,
+  delay = 0,
+  selectable,
+  selected,
+  onToggleSelect,
+}: {
+  item: ContentItem;
+  compact?: boolean;
+  delay?: number;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
+}) {
   const quadrant = item.quadrant as QuadrantKey;
   const config = quadrant ? quadrantConfig[quadrant] : null;
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (selectable && onToggleSelect) {
+      e.preventDefault();
+      onToggleSelect(item.id);
+    }
+  };
+
   return (
     <div
-      className={`glass-subtle glass-hover p-4 ${compact ? '' : ''} opacity-0 animate-fade-in`}
+      onClick={handleClick}
+      className={`glass-subtle p-4 opacity-0 animate-fade-in transition-all ${
+        selectable ? 'cursor-pointer' : ''
+      } ${
+        selected
+          ? 'border-purple-500/50 bg-purple-500/10 ring-1 ring-purple-500/30'
+          : 'glass-hover'
+      }`}
       style={{ animationDelay: `${delay}ms` } as React.CSSProperties}
     >
       <div className="flex items-start gap-3">
-        {config && (
+        {selectable && (
+          <div
+            className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
+              selected
+                ? 'bg-purple-500 border-purple-500'
+                : 'border-gray-500 hover:border-purple-400'
+            }`}
+          >
+            {selected && <Check className="w-3 h-3 text-white" />}
+          </div>
+        )}
+        {config && !selectable && (
           <div className={`p-2 rounded-lg ${config.bgColor} shrink-0`}>
             <config.icon className={`w-4 h-4 ${config.color}`} />
           </div>
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1.5">
+            {config && selectable && (
+              <span className={`badge text-xs ${config.badgeClass}`}>
+                {config.label}
+              </span>
+            )}
             {item.relevance_score && (
               <span
                 className={`badge text-xs ${
@@ -461,14 +656,18 @@ function ContentCard({ item, compact, delay = 0 }: { item: ContentItem; compact?
               {item.scraped_at && format(new Date(item.scraped_at), 'MMM d')}
             </span>
           </div>
-          <a
-            href={item.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-sm hover:text-purple-400 transition line-clamp-2"
-          >
-            {item.title}
-          </a>
+          {selectable ? (
+            <p className="font-medium text-sm line-clamp-2">{item.title}</p>
+          ) : (
+            <a
+              href={item.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-sm hover:text-purple-400 transition line-clamp-2"
+            >
+              {item.title}
+            </a>
+          )}
           {item.ai_summary && (
             <p className="text-gray-400 text-xs mt-1.5 line-clamp-2">{item.ai_summary}</p>
           )}
@@ -593,7 +792,7 @@ function ScriptCard({ script, delay = 0 }: { script: Script; delay?: number }) {
           </span>
         </div>
         <p className="font-medium truncate">{script.script_title}</p>
-        <p className="text-sm text-gray-400">{script.word_count.toLocaleString()} words</p>
+        <p className="text-sm text-gray-400">{(script.word_count || 0).toLocaleString()} words</p>
       </div>
       <a
         href={script.google_doc_url}

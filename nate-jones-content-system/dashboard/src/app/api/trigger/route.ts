@@ -10,7 +10,7 @@ const workflowIds: Record<string, string> = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { workflow } = body;
+    const { workflow, selectedContentIds } = body;
 
     // For scraper: n8n Cloud doesn't support API execution or auto-registered webhooks
     // The scraper runs automatically every 6 hours, or can be manually triggered in n8n UI
@@ -38,10 +38,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Build the payload - include selected content IDs for script generation
+    const payload: Record<string, unknown> = {
+      triggered_from: 'dashboard',
+      timestamp: new Date().toISOString(),
+    };
+
+    // If specific content IDs were selected for script generation, include them
+    if (workflow === 'script' && selectedContentIds && selectedContentIds.length > 0) {
+      payload.selectedContentIds = selectedContentIds;
+      payload.useSelectedOnly = true;
+    }
+
     const response = await fetch(webhookUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ triggered_from: 'dashboard', timestamp: new Date().toISOString() }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
