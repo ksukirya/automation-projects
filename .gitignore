@@ -107,3 +107,8 @@ nul
 # ===================
 .claude/*.local.md
 .claude/*.local.json
+
+# ===================
+# Client Data (sensitive)
+# ===================
+client-data/

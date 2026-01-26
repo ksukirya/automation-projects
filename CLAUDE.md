@@ -93,19 +93,65 @@ When requesting new automations, please provide:
 4. Any third-party services involved
 5. Error handling requirements
 
+## Decision Protocol
+
+Before implementing any significant change, run `/council` with the proposed approach. Significant changes include:
+- Architecture decisions
+- New integrations or dependencies
+- Database schema changes
+- Security-related code
+- Anything that would be hard to reverse
+
+After receiving the council decision:
+1. Note the consensus points
+2. Address concerns raised by dissenting agents
+3. Document the decision rationale in code comments
+4. Proceed with implementation
+
+Example: `/council Should we use Redis or PostgreSQL for session storage?`
+
+## Quick Context Reference
+
+**For fast project lookup, read these files:**
+- `PROJECT_INDEX.md` - Full project documentation and directory structure
+- `.claude/context/projects.md` - Active projects quick reference
+- `.claude/context/file-locations.md` - Key file paths
+- `.claude/context/clients.md` - Client information and data locations
+
 ## Project Structure
 
 ```
 automation-projects/
-├── workflows/          # Exported n8n workflow JSON files
-├── docs/               # Documentation for workflows
-├── scripts/            # Helper scripts (if any)
-├── skills/             # Claude Code skills
-│   ├── skills/
-│   │   ├── obsidian-vault/        # Obsidian note-taking skill
-│   │   └── subagent-orchestrator/ # Background agent orchestration
-│   └── n8n-docs/       # n8n documentation reference
-└── CLAUDE.md           # This file
+├── CLIENT PROJECTS
+│   └── nate-jones-content-system/    # Reprise AI Content System
+│
+├── WORKFLOWS
+│   └── workflows/                     # n8n workflow JSON exports
+│
+├── DATA & CONFIG
+│   ├── client-data/                   # ClickUp exports, client task data
+│   ├── data/                          # CSV data files, seeds
+│   └── .env                           # Environment variables
+│
+├── DOCUMENTATION
+│   ├── CLAUDE.md                      # Main instructions (this file)
+│   ├── PROJECT_INDEX.md               # Full project index
+│   ├── docs/                          # Workflow documentation
+│   └── memories/                      # Session memory files
+│
+├── DEVELOPMENT
+│   ├── scripts/                       # Helper scripts (JS, Python, PS1)
+│   ├── skills/                        # Claude Code skills & n8n docs
+│   └── temp/                          # Temporary work files
+│
+├── CONTEXT (for Claude)
+│   └── .claude/context/               # Quick reference files
+│       ├── projects.md                # Active projects
+│       ├── file-locations.md          # Key file paths
+│       └── clients.md                 # Client information
+│
+└── ASSETS
+    └── public/                        # Public assets (images, etc.)
 
 Obsidian Vault (external):
 C:\Users\Keshav\Documents\ObsidianVault/

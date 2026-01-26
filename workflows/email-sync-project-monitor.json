@@ -1,0 +1,55 @@
+{
+  "name": "[Email Sync] Project Update Monitor",
+  "nodes": [
+    {
+      "id": "trigger-syntrex",
+      "name": "Gmail Trigger - Syntrex",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [0, 0],
+      "parameters": {
+        "pollTimes": {"item": [{"mode": "everyMinute", "minute": 5}]},
+        "filters": {"q": "is:inbox -category:promotions -category:social", "readStatus": "unread"},
+        "simple": true
+      },
+      "credentials": {"gmailOAuth2": {"id": "SYNTREX_GMAIL_CRED_ID", "name": "Gmail - Syntrex"}}
+    },
+    {
+      "id": "trigger-reprise",
+      "name": "Gmail Trigger - Reprise",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [0, 200],
+      "parameters": {
+        "pollTimes": {"item": [{"mode": "everyMinute", "minute": 5}]},
+        "filters": {"q": "is:inbox -category:promotions -category:social", "readStatus": "unread"},
+        "simple": true
+      },
+      "credentials": {"gmailOAuth2": {"id": "REPRISE_GMAIL_CRED_ID", "name": "Gmail - Reprise"}}
+    },
+    {
+      "id": "trigger-salesdone",
+      "name": "Gmail Trigger - SalesDone",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [0, 400],
+      "parameters": {
+        "pollTimes": {"item": [{"mode": "everyMinute", "minute": 5}]},
+        "filters": {"q": "is:inbox -category:promotions -category:social", "readStatus": "unread"},
+        "simple": true
+      },
+      "credentials": {"gmailOAuth2": {"id": "SALESDONE_GMAIL_CRED_ID", "name": "Gmail - SalesDone"}}
+    }
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true
+  },
+  "meta": {
+    "workflowId": "FhP3FtBgtApRjbUY",
+    "createdAt": "2026-01-21"
+  }
+}

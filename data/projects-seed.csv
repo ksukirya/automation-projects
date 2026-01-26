@@ -1,0 +1,11 @@
+projectId,projectName,status,slackChannel,obsidianNotePath,clickupListId,lastUpdated,lastActivity,notes
+proj-001,San Diego Cardiac,active,#sd-cardiac,02-Projects/San Diego Cardiac.md,,2026-01-21,,"Active Pieces + Practice Fusion EMR integration"
+proj-002,RPB Medical,active,#rpb-medical,02-Projects/RPB Medical.md,,2026-01-21,,
+proj-003,Kid & Grownup Dental,active,#kg-dental,02-Projects/Kid & Grownup Dental.md,,2026-01-21,,
+proj-004,Reprise Internal,active,#reprise-internal,02-Projects/Reprise Internal.md,,2026-01-21,,"Mid ticket videos, AI audit workflows"
+proj-005,DCCS,active,#dccs,02-Projects/DCCS.md,,2026-01-21,,
+proj-006,Impact3,active,#impact3,02-Projects/Impact3.md,,2026-01-21,,
+proj-007,Galileon,active,#galileon,02-Projects/Galileon.md,,2026-01-21,,
+proj-008,Aquagents,active,#aquagents,02-Projects/Aquagents.md,,2026-01-21,,
+proj-009,Viking,active,#viking,02-Projects/Viking.md,,2026-01-21,,
+proj-010,Traverse Legal,active,#traverse-legal,02-Projects/Traverse Legal.md,,2026-01-21,,
