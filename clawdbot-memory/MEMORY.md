@@ -8,11 +8,22 @@ Both can read and write here to maintain shared context.
 - Uses Claude Code locally on Windows at C:\Users\Keshav\automation-projects
 - Has Telegram bot: @ksukirya_bot
 - Has Discord bot: @KeshavBot
+- AI Automation Engineer at **Reprise AI** (his company)
+- Also working on **Sync2.ai** (healthcare AI company)
 - Working on n8n automation projects
+
+## ICP: "Patrick"
+Business owners in real estate, healthcare, SaaS, agencies who:
+- Want to integrate AI into their business
+- Are skeptical of current AI / not sure about it
+- Need practical AI use cases and AI audits
 
 ## Connections Established
 - [x] Telegram (2026-01-26)
 - [x] Discord (2026-01-26)
+
+## Automated Jobs
+- **Daily AI News Briefing** (8am ET) - AI news relevant to Keshav + content ideas for Patrick
 
 ## Shared Context
 - Both Claude Code and Clawdbot share this memory via git sync
