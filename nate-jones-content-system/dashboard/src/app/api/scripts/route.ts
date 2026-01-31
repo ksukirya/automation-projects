@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getScripts, updateScriptStatus, deleteScript } from '@/lib/airtable';
+import { getScripts, updateScriptStatus, deleteScript } from '@/lib/airtable-v2';
 
 export async function GET() {
   try {

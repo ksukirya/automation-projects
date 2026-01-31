@@ -58,12 +58,12 @@ export default function SimpleDashboard() {
         scriptsRes.json()
       ]);
 
-      if (contentData.success) {
+      if (contentData.success && contentData.data) {
         setContent(contentData.data);
         setLastUpdate(new Date());
       }
 
-      if (scriptsData.success) {
+      if (scriptsData.success && scriptsData.data) {
         setScripts(scriptsData.data.slice(0, 5)); // Show latest 5 scripts
       }
     } catch (error) {
@@ -303,18 +303,22 @@ export default function SimpleDashboard() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-medium">
-                        {script.script_type.replace('_', ' ')}
-                      </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        script.status === 'approved'
-                          ? 'bg-green-500/20 text-green-300'
-                          : script.status === 'draft'
-                          ? 'bg-yellow-500/20 text-yellow-300'
-                          : 'bg-gray-500/20 text-gray-300'
-                      }`}>
-                        {script.status}
-                      </span>
+                      {script.script_type && (
+                        <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-medium">
+                          {script.script_type.replace('_', ' ')}
+                        </span>
+                      )}
+                      {script.status && (
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          script.status === 'approved'
+                            ? 'bg-green-500/20 text-green-300'
+                            : script.status === 'draft'
+                            ? 'bg-yellow-500/20 text-yellow-300'
+                            : 'bg-gray-500/20 text-gray-300'
+                        }`}>
+                          {script.status}
+                        </span>
+                      )}
                       {script.script_date && (
                         <span className="text-gray-500 text-xs">
                           {new Date(script.script_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -322,7 +326,7 @@ export default function SimpleDashboard() {
                       )}
                     </div>
 
-                    <h3 className="text-xl font-semibold mb-2">{script.script_title}</h3>
+                    <h3 className="text-xl font-semibold mb-2">{script.script_title || 'Untitled Script'}</h3>
 
                     {script.patrick_focus && (
                       <p className="text-gray-400 mb-3">
@@ -331,9 +335,9 @@ export default function SimpleDashboard() {
                     )}
 
                     <div className="flex items-center gap-4 text-sm text-gray-400">
-                      <span>{script.word_count} words</span>
-                      <span>•</span>
-                      <span>Created {new Date(script.created_at).toLocaleDateString()}</span>
+                      {script.word_count && <span>{script.word_count} words</span>}
+                      {script.word_count && script.created_at && <span>•</span>}
+                      {script.created_at && <span>Created {new Date(script.created_at).toLocaleDateString()}</span>}
                     </div>
                   </div>
 
