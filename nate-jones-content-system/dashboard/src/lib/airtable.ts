@@ -68,7 +68,7 @@ export async function getContent(filter?: string): Promise<ContentItem[]> {
     .select({
       filterByFormula: filter || '',
       sort: [{ field: 'scraped_at', direction: 'desc' }],
-      maxRecords: 500,
+      maxRecords: 1000,
     })
     .all();
 
@@ -108,6 +108,24 @@ export async function updateScriptStatus(
 
 export async function deleteScript(id: string): Promise<void> {
   await getScriptsTable().destroy(id);
+}
+
+export async function getBreakingNewsForScript(): Promise<ContentItem[]> {
+  const records = await getContentTable()
+    .select({
+      filterByFormula: 'AND({quadrant} = "BREAKING", {status} = "categorized", {used_in_script} = FALSE(), {relevance_score} >= 6)',
+      sort: [
+        { field: 'relevance_score', direction: 'desc' },
+        { field: 'published_date', direction: 'desc' }
+      ],
+      maxRecords: 10,
+    })
+    .all();
+
+  return records.map((record) => ({
+    id: record.id,
+    ...(record.fields as Omit<ContentItem, 'id'>),
+  }));
 }
 
 export async function getStats() {
