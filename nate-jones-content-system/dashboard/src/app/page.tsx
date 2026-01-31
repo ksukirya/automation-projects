@@ -171,9 +171,14 @@ export default function SimpleDashboard() {
           </button>
         </div>
 
-        <p className="text-sm text-gray-500 mt-4">
-          Last updated: {lastUpdate.toLocaleTimeString()} • Auto-refreshes every hour
-        </p>
+        <div className="flex items-center justify-center gap-2 text-sm text-gray-500 mt-4">
+          <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
+          <span>•</span>
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <span>Auto-refreshes every hour</span>
+          </div>
+        </div>
       </div>
 
       {/* Selection Info */}
