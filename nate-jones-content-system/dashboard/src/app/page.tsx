@@ -220,6 +220,11 @@ export default function SimpleDashboard() {
                       </span>
                     )}
                     <span className="text-gray-500 text-sm">{item.source_name}</span>
+                    {item.published_date && (
+                      <span className="text-gray-500 text-xs">
+                        • {new Date(item.published_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    )}
                   </div>
 
                   <h3 className="text-xl font-semibold mb-2">{item.title}</h3>

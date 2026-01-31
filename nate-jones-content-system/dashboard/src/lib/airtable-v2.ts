@@ -97,11 +97,11 @@ export async function getContent(filter?: string): Promise<ContentItem[]> {
   }));
 }
 
-// Get top picks for Patrick (relevance >= 8, not used)
+// Get top picks for Patrick (relevance >= 8, not used, published today or yesterday)
 export async function getTopPicksForPatrick(): Promise<ContentItem[]> {
   const records = await getContentTable()
     .select({
-      filterByFormula: 'AND({status} = "categorized", {used_in_script} = FALSE(), {relevance_score} >= 8)',
+      filterByFormula: 'AND({status} = "categorized", {used_in_script} = FALSE(), {relevance_score} >= 8, IS_AFTER({published_date}, DATEADD(TODAY(), -2, "days")))',
       sort: [
         { field: 'relevance_score', direction: 'desc' },
         { field: 'published_date', direction: 'desc' }
@@ -132,11 +132,11 @@ export async function getContentByCategory(category: ContentItem['category']): P
   }));
 }
 
-// Get content ready for script (top 10 highest relevance, not used)
+// Get content ready for script (top 10 highest relevance, not used, published today or yesterday)
 export async function getContentForScript(limit: number = 10): Promise<ContentItem[]> {
   const records = await getContentTable()
     .select({
-      filterByFormula: 'AND({status} = "categorized", {used_in_script} = FALSE(), {relevance_score} >= 7)',
+      filterByFormula: 'AND({status} = "categorized", {used_in_script} = FALSE(), {relevance_score} >= 7, IS_AFTER({published_date}, DATEADD(TODAY(), -2, "days")))',
       sort: [
         { field: 'relevance_score', direction: 'desc' },
         { field: 'published_date', direction: 'desc' }
