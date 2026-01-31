@@ -458,11 +458,18 @@ return {
    - Title: `{{ $json.scriptType }}_{{ $now.format('YYYY-MM-DD') }}`
    - Content: `{{ $json.choices[0].message.content }}`
 
-8. **Google Drive - Share**
+8. **Google Drive - Update File Permissions**
    - File ID: `{{ $json.documentId }}`
-   - Permission:
-     - Role: writer
+   - Permission Settings:
+     - **Type**: `anyone`
+     - **Role**: `writer`
+   - This makes the document publicly editable by anyone with the link
+
+   **IMPORTANT**: Use the "Google Drive" node, select "Update" operation, then choose "Share a file"
+   - In the "Permissions" section:
      - Type: anyone
+     - Role: writer
+   - This creates a public link that allows editing without requiring sign-in
 
 9. **Airtable - Create Script Record**
    - Table: Scripts
