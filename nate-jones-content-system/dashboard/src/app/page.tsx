@@ -13,6 +13,7 @@ interface ContentItem {
   relevance_score: number | null;
   patrick_angle: string | null;
   published_date: string;
+  scraped_at: string;
 }
 
 interface Script {
@@ -261,16 +262,26 @@ export default function SimpleDashboard() {
                     </p>
                   )}
 
-                  <a
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-purple-400 hover:text-purple-300 flex items-center gap-1 text-sm"
-                  >
-                    View source
-                    <ExternalLink className="w-3 h-3" />
-                  </a>
+                  <div className="flex items-center gap-4 text-sm">
+                    <a
+                      href={item.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-purple-400 hover:text-purple-300 flex items-center gap-1"
+                    >
+                      View source
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                    {item.scraped_at && (
+                      <>
+                        <span className="text-gray-600">•</span>
+                        <span className="text-gray-500 text-xs">
+                          Scraped {new Date(item.scraped_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
