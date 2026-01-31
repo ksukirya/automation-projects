@@ -24,6 +24,7 @@ export async function GET() {
         key_points: item.key_points,
         script_hook: item.script_hook,
         published_date: item.published_date,
+        scraped_at: item.scraped_at,
       }))
     });
   } catch (error) {
