@@ -21,12 +21,12 @@ interface Script {
   script_id: number;
   script_date: string;
   script_title: string;
-  script_type: string;
+  script_type?: string;
   google_doc_url: string;
   word_count: number;
-  patrick_focus: string;
+  patrick_focus?: string;
   status: string;
-  created_at: string;
+  created_at?: string;
 }
 
 export default function SimpleDashboard() {
@@ -330,9 +330,12 @@ export default function SimpleDashboard() {
                           {script.status}
                         </span>
                       )}
+                      <span className="text-gray-500 text-xs">
+                        #{script.script_id}
+                      </span>
                       {script.script_date && (
                         <span className="text-gray-500 text-xs">
-                          {new Date(script.script_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          • {new Date(script.script_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       )}
                     </div>
@@ -346,9 +349,11 @@ export default function SimpleDashboard() {
                     )}
 
                     <div className="flex items-center gap-4 text-sm text-gray-400">
-                      {script.word_count && <span>{script.word_count} words</span>}
-                      {script.word_count && script.created_at && <span>•</span>}
-                      {script.created_at && <span>Created {new Date(script.created_at).toLocaleDateString()}</span>}
+                      {script.word_count && <span>{script.word_count.toLocaleString()} words</span>}
+                      {script.word_count && (script.created_at || script.script_date) && <span>•</span>}
+                      {(script.created_at || script.script_date) && (
+                        <span>Created {new Date(script.created_at || script.script_date).toLocaleDateString()}</span>
+                      )}
                     </div>
                   </div>
 
