@@ -15,8 +15,22 @@ interface ContentItem {
   published_date: string;
 }
 
+interface Script {
+  id: string;
+  script_id: number;
+  script_date: string;
+  script_title: string;
+  script_type: string;
+  google_doc_url: string;
+  word_count: number;
+  patrick_focus: string;
+  status: string;
+  created_at: string;
+}
+
 export default function SimpleDashboard() {
   const [content, setContent] = useState<ContentItem[]>([]);
+  const [scripts, setScripts] = useState<Script[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -34,11 +48,23 @@ export default function SimpleDashboard() {
 
   async function fetchContent() {
     try {
-      const res = await fetch('/api/top-picks', { cache: 'no-store' });
-      const data = await res.json();
-      if (data.success) {
-        setContent(data.data);
+      const [contentRes, scriptsRes] = await Promise.all([
+        fetch('/api/top-picks', { cache: 'no-store' }),
+        fetch('/api/scripts', { cache: 'no-store' })
+      ]);
+
+      const [contentData, scriptsData] = await Promise.all([
+        contentRes.json(),
+        scriptsRes.json()
+      ]);
+
+      if (contentData.success) {
+        setContent(contentData.data);
         setLastUpdate(new Date());
+      }
+
+      if (scriptsData.success) {
+        setScripts(scriptsData.data.slice(0, 5)); // Show latest 5 scripts
       }
     } catch (error) {
       console.error('Error:', error);
@@ -256,6 +282,76 @@ export default function SimpleDashboard() {
         <div className="text-center py-20">
           <p className="text-gray-400 text-lg">No content available yet</p>
           <p className="text-gray-500 text-sm mt-2">Content will auto-update every hour</p>
+        </div>
+      )}
+
+      {/* Generated Scripts Section */}
+      {scripts.length > 0 && (
+        <div className="mt-12">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold">Recent Scripts</h2>
+            <span className="text-gray-400 text-sm">{scripts.length} scripts</span>
+          </div>
+
+          <div className="space-y-4">
+            {scripts.map((script, index) => (
+              <div
+                key={script.id}
+                className="glass p-6 rounded-2xl hover:bg-white/5 transition opacity-0 animate-fade-in"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="px-3 py-1 bg-blue-500/20 text-blue-300 rounded-full text-xs font-medium">
+                        {script.script_type.replace('_', ' ')}
+                      </span>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        script.status === 'approved'
+                          ? 'bg-green-500/20 text-green-300'
+                          : script.status === 'draft'
+                          ? 'bg-yellow-500/20 text-yellow-300'
+                          : 'bg-gray-500/20 text-gray-300'
+                      }`}>
+                        {script.status}
+                      </span>
+                      {script.script_date && (
+                        <span className="text-gray-500 text-xs">
+                          {new Date(script.script_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="text-xl font-semibold mb-2">{script.script_title}</h3>
+
+                    {script.patrick_focus && (
+                      <p className="text-gray-400 mb-3">
+                        💡 <span className="font-medium">Focus:</span> {script.patrick_focus}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-4 text-sm text-gray-400">
+                      <span>{script.word_count} words</span>
+                      <span>•</span>
+                      <span>Created {new Date(script.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+
+                  {script.google_doc_url && (
+                    <a
+                      href={script.google_doc_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-6 py-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all flex items-center gap-2"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                      Open Doc
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
