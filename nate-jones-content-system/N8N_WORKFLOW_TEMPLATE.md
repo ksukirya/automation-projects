@@ -15,7 +15,7 @@
 
 2. **HTTP Request - Get Sources**
    - Method: GET
-   - URL: `https://your-dashboard.vercel.app/api/sources`
+   - URL: `https://dashboard-psi-five-20.vercel.app/api/sources`
    - Returns: Your Google Sheets sources
 
 3. **Split In Batches**
@@ -298,7 +298,7 @@ return {
 
 2. **HTTP Request - Get Content**
    - Method: POST
-   - URL: `https://your-dashboard.vercel.app/api/generate-script`
+   - URL: `https://dashboard-psi-five-20.vercel.app/api/generate-script`
    - Body:
      ```json
      {

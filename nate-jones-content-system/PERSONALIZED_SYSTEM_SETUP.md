@@ -186,7 +186,7 @@ avg_relevance (number)
 
 **Steps**:
 1. HTTP Request → Get sources from Google Sheets
-   - URL: `https://your-dashboard.vercel.app/api/sources`
+   - URL: `https://dashboard-psi-five-20.vercel.app/api/sources`
 2. Loop through each source
 3. Based on type:
    - YouTube → RSS Feed Parser
@@ -238,7 +238,7 @@ avg_relevance (number)
 
 **Steps**:
 1. HTTP Request → Get script content
-   - URL: `https://your-dashboard.vercel.app/api/generate-script`
+   - URL: `https://dashboard-psi-five-20.vercel.app/api/generate-script`
 2. OpenAI Chat → GPT-4o
    - Prompt based on script type:
 
