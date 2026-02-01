@@ -1,0 +1,256 @@
+{
+  "name": "Error Handler Template",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "name": "timestamp",
+              "value": "={{ $now.format('YYYY-MM-DD HH:mm:ss') }}",
+              "type": "string"
+            },
+            {
+              "name": "workflowName",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            },
+            {
+              "name": "workflowId",
+              "value": "={{ $workflow.id }}",
+              "type": "string"
+            },
+            {
+              "name": "nodeName",
+              "value": "={{ $json.node.name }}",
+              "type": "string"
+            },
+            {
+              "name": "errorMessage",
+              "value": "={{ $json.error.message }}",
+              "type": "string"
+            },
+            {
+              "name": "errorType",
+              "value": "={{ $json.error.name }}",
+              "type": "string"
+            },
+            {
+              "name": "executionId",
+              "value": "={{ $execution.id }}",
+              "type": "string"
+            },
+            {
+              "name": "executionUrl",
+              "value": "=https://keshavs.app.n8n.cloud/workflow/{{ $workflow.id }}/executions/{{ $execution.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Format Error Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "text": "=🚨 *n8n Workflow Error*\n\n*Workflow:* {{ $json.workflowName }}\n*Node Failed:* {{ $json.nodeName }}\n*Time:* {{ $json.timestamp }}\n\n*Error:*\n```{{ $json.errorMessage }}```\n\n*Type:* {{ $json.errorType }}\n\n<{{ $json.executionUrl }}|View Execution>",
+        "additionalFields": {
+          "username": "n8n Error Monitor",
+          "iconEmoji": ":warning:"
+        }
+      },
+      "name": "Slack Notification",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [680, 200],
+      "credentials": {
+        "slackWebhookApi": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Slack Webhook"
+        }
+      },
+      "notes": "Replace credential ID with your Slack webhook"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "REPLACE_WITH_YOUR_GOOGLE_SHEET_ID"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.timestamp }}",
+            "workflowName": "={{ $json.workflowName }}",
+            "workflowId": "={{ $json.workflowId }}",
+            "nodeName": "={{ $json.nodeName }}",
+            "errorMessage": "={{ $json.errorMessage }}",
+            "errorType": "={{ $json.errorType }}",
+            "executionId": "={{ $json.executionId }}",
+            "resolved": "No"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "workflowName",
+              "displayName": "workflowName",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "workflowId",
+              "displayName": "workflowId",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "nodeName",
+              "displayName": "nodeName",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "errorMessage",
+              "displayName": "errorMessage",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "errorType",
+              "displayName": "errorType",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "executionId",
+              "displayName": "executionId",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "resolved",
+              "displayName": "resolved",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Google Sheets Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [680, 400],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Google Sheets OAuth2"
+        }
+      },
+      "notes": "Replace documentId with your Google Sheet ID"
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Format Error Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Error Data": {
+      "main": [
+        [
+          {
+            "node": "Slack Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Sheets Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2026-02-01T00:00:00.000Z",
+  "versionId": "1"
+}
